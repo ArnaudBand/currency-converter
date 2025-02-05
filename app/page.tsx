@@ -1,101 +1,158 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import countries from "./countries";
+
+const CurrencyConverter = () => {
+  const [amount, setAmount] = useState(1);
+  const [convertedAmount, setConvertedAmount] = useState(0);
+  const [exchangeRate, setExchangeRate] = useState(1);
+  const [fromCountry, setFromCountry] = useState(countries[0]);
+  const [toCountry, setToCountry] = useState(countries[1]);
+  const [isSwapping, setIsSwapping] = useState(false);
+
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      try {
+        const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromCountry.currency}`);
+        if (!response.ok) throw new Error("Failed to fetch exchange rate");
+
+        const data = await response.json();
+        setExchangeRate(data.rates[toCountry.currency] || 1);
+      } catch (error) {
+        console.error("Error fetching exchange rate:", error);
+      }
+    };
+
+    fetchExchangeRate();
+  }, [fromCountry, toCountry]);
+
+  useEffect(() => {
+    setConvertedAmount(amount * exchangeRate);
+  }, [amount, exchangeRate]);
+
+  // Swap the selected countries
+  const swapCountries = () => {
+    setIsSwapping(true);
+    setTimeout(() => {
+      setFromCountry(toCountry);
+      setToCountry(fromCountry);
+      setIsSwapping(false);
+    }, 500);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <motion.div
+      className="max-w-md mx-auto p-8 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 shadow-2xl rounded-2xl mt-10 text-white"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.8 }}
+    >
+      {/* Header */}
+      <motion.h2
+        className="text-3xl font-bold text-center mb-4"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        🌍 Currency Converter
+      </motion.h2>
+      <p className="text-center text-sm text-gray-300 mb-6">
+        Convert currencies instantly with live exchange rates.
+      </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+      {/* FROM Country */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-300">From:</label>
+        <motion.select
+          value={fromCountry.code}
+          onChange={(e) => {
+            const country = countries.find((c) => c.code === e.target.value);
+            if (country) setFromCountry(country);
+          }}
+          className="mt-1 block w-full p-3 border border-gray-500 rounded-lg bg-gray-800 text-white"
+          whileHover={{ scale: 1.05 }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          {countries.map((country) => (
+            <option key={country.code} value={country.code}>
+              {country.flag} {country.name} ({country.currency})
+            </option>
+          ))}
+        </motion.select>
+      </div>
+
+      {/* SWAP BUTTON */}
+      <motion.button
+        className="w-full bg-yellow-500 text-black py-2 rounded-lg font-bold my-4 hover:bg-yellow-400 flex items-center justify-center"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={swapCountries}
+      >
+        <motion.span
+          animate={{ rotate: isSwapping ? 180 : 0 }}
+          transition={{ duration: 0.5 }}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          🔄
+        </motion.span>{" "}
+        Swap
+      </motion.button>
+
+      {/* TO Country */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-300">To:</label>
+        <motion.select
+          value={toCountry.code}
+          onChange={(e) => {
+            const country = countries.find((c) => c.code === e.target.value);
+            if (country) setToCountry(country);
+          }}
+          className="mt-1 block w-full p-3 border border-gray-500 rounded-lg bg-gray-800 text-white"
+          whileHover={{ scale: 1.05 }}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          {countries.map((country) => (
+            <option key={country.code} value={country.code}>
+              {country.flag} {country.name} ({country.currency})
+            </option>
+          ))}
+        </motion.select>
+      </div>
+
+      {/* Amount Input */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-300">Amount ({fromCountry.currency}):</label>
+        <motion.input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+          className="mt-1 block w-full p-3 border border-gray-500 rounded-lg bg-gray-800 text-white"
+          whileFocus={{ scale: 1.05 }}
+        />
+      </div>
+
+      {/* Real-Time Exchange Rate */}
+      <motion.div
+        className="text-lg font-semibold text-center mb-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      >
+        <span className="text-gray-400">1 {fromCountry.currency} =</span>{" "}
+        <span className="text-yellow-400 font-bold">{exchangeRate.toFixed(4)}</span>{" "}
+        <span className="text-gray-400">{toCountry.currency}</span>
+      </motion.div>
+
+      {/* Converted Amount */}
+      <motion.div
+        className="text-2xl font-semibold text-center bg-gray-800 py-3 rounded-lg"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+      >
+        {convertedAmount.toFixed(2)} {toCountry.currency}
+      </motion.div>
+    </motion.div>
   );
-}
+};
+
+export default CurrencyConverter;
